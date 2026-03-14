@@ -80,6 +80,32 @@ function updateNavigation() {
             console.log('Navigation update complete');
         }
     }
+    
+    // Update active states based on current page
+    updateActiveStates();
+}
+
+function updateActiveStates() {
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('.nav-links a');
+    
+    navLinks.forEach(link => {
+        // Remove existing active classes
+        link.classList.remove('active');
+        
+        // Add active class based on current path
+        if (currentPath === '/' && link.getAttribute('href') === '/') {
+            link.classList.add('active');
+        } else if (currentPath.includes('/pages/courses.html') && link.getAttribute('href') === '/pages/courses.html') {
+            link.classList.add('active');
+        } else if (currentPath.includes('/pages/admin-dashboard.html') && link.getAttribute('href') === '/pages/admin-dashboard.html') {
+            link.classList.add('active');
+        } else if (currentPath.includes('/pages/student-dashboard.html') && link.getAttribute('href') === '/pages/student-dashboard.html') {
+            link.classList.add('active');
+        } else if (currentPath.includes('/pages/profile.html') && link.getAttribute('href') === '/pages/profile.html') {
+            link.classList.add('active');
+        }
+    });
 }
 
 function logout() {

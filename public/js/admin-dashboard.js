@@ -547,7 +547,7 @@ function logout() {
     localStorage.removeItem('currentUser');
     showMessage('Logged out successfully', 'success');
     setTimeout(() => {
-        window.location.href = '/index.html';
+        window.location.href = '/';
     }, 1000);
 }
 

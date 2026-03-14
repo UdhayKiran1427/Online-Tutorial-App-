@@ -47,6 +47,7 @@ async function loadEnrollments() {
     if (!loggedInUser) return;
     
     const user = JSON.parse(loggedInUser);
+    console.log('Loading enrollments for user:', user);
     
     try {
         const response = await fetch('/api/enrollments/student', {
@@ -55,11 +56,14 @@ async function loadEnrollments() {
             }
         });
         
+        console.log('Enrollments response status:', response.status);
         const result = await response.json();
+        console.log('Enrollments API result:', result);
         
         if (result.success) {
             displayEnrollments(result.data);
         } else {
+            console.log('Enrollments API failed:', result.message);
             showMessage('Failed to load enrollments', 'error');
         }
     } catch (error) {
@@ -69,10 +73,15 @@ async function loadEnrollments() {
 }
 
 function displayEnrollments(enrollments) {
+    console.log('displayEnrollments called with data:', enrollments);
     const enrollmentsTable = document.getElementById('enrollmentsTable');
-    if (!enrollmentsTable) return;
+    if (!enrollmentsTable) {
+        console.log('enrollmentsTable not found');
+        return;
+    }
     
     if (enrollments.length === 0) {
+        console.log('No enrollments found');
         enrollmentsTable.innerHTML = `
             <tr>
                 <td colspan="4" style="text-align: center; padding: 2rem;">
@@ -85,9 +94,12 @@ function displayEnrollments(enrollments) {
     }
     
     enrollmentsTable.innerHTML = enrollments.map(enrollment => {
+        console.log('Processing enrollment:', enrollment);
         const progress = enrollment.status === 'approved' ? Math.floor(Math.random() * 80) + 10 : 0;
         const statusClass = enrollment.status === 'approved' ? 'status-approved' : 'status-pending';
         const statusText = enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1);
+        
+        console.log('Enrollment status:', enrollment.status, 'Button will be:', enrollment.status === 'approved' ? 'Continue' : 'Waiting');
         
         return `
             <tr>
@@ -114,7 +126,7 @@ function logout() {
     localStorage.removeItem('currentUser');
     showMessage('Logged out successfully', 'success');
     setTimeout(() => {
-        window.location.href = '/index.html';
+        window.location.href = '/';
     }, 1000);
 }
 
