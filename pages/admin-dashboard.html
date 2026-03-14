@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Online Tutorial Platform</title>
-    <link rel="stylesheet" href="../public/css/style.css">
+    <link rel="stylesheet" href="/public/css/style.css">
 </head>
 <body>
     <header>
         <nav class="container">
-            <a href="/" class="logo">📚 Gradious Tutorial Platform</a>
+            <a href="/pages/admin-dashboard.html" class="logo">📚 Gradious Tutorial Platform</a>
             <ul class="nav-links">
-                <li><a href="/">Home</a></li>
-                <li><a href="admin-dashboard.html">Dashboard</a></li>
+                <li><a href="/pages/admin-dashboard.html">Dashboard</a></li>
+                <li><a href="/pages/profile.html">Profile</a></li>
                 <li><a href="#" onclick="logout()">Logout</a></li>
             </ul>
         </nav>
@@ -28,25 +28,25 @@
             <div class="dashboard-grid">
                 <div class="dashboard-card">
                     <h3>👥 Total Students</h3>
-                    <div style="font-size: 2.5rem; font-weight: bold; color: #667eea;">156</div>
+                    <div style="font-size: 2.5rem; font-weight: bold; color: #667eea;">2</div>
                     <p style="color: #666;">Active learners</p>
                 </div>
 
                 <div class="dashboard-card">
                     <h3>📚 Total Courses</h3>
-                    <div style="font-size: 2.5rem; font-weight: bold; color: #667eea;">12</div>
+                    <div style="font-size: 2.5rem; font-weight: bold; color: #667eea;">6</div>
                     <p style="color: #666;">Available courses</p>
                 </div>
 
                 <div class="dashboard-card">
                     <h3>📋 Pending Requests</h3>
-                    <div style="font-size: 2.5rem; font-weight: bold; color: #f39c12;">8</div>
+                    <div style="font-size: 2.5rem; font-weight: bold; color: #f39c12;">1</div>
                     <p style="color: #666;">Enrollment requests</p>
                 </div>
 
                 <div class="dashboard-card">
                     <h3>✅ Approved Enrollments</h3>
-                    <div style="font-size: 2.5rem; font-weight: bold; color: #27ae60;">243</div>
+                    <div style="font-size: 2.5rem; font-weight: bold; color: #27ae60;">3</div>
                     <p style="color: #666;">Total approved</p>
                 </div>
             </div>
@@ -140,6 +140,29 @@
                         </thead>
                         <tbody id="coursesManagementTable">
                             <!-- Courses will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Student Management Section -->
+            <div class="dashboard-card" style="margin-top: 2rem; display: none;" id="studentManagementSection">
+                <h3>👥 Student Management</h3>
+                <p style="margin-bottom: 1rem;">View all registered students and their enrollment details</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Email</th>
+                                <th>Registration Date</th>
+                                <th>Enrolled Courses</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsManagementTable">
+                            <!-- Students will be loaded here -->
                         </tbody>
                     </table>
                 </div>
@@ -270,6 +293,41 @@
         </div>
     </div>
 
-    <script src="../public/js/admin-dashboard.js"></script>
+    <!-- Profile Modal -->
+    <div id="profileModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 10px; width: 90%; max-width: 500px;">
+            <h3 style="margin-bottom: 1.5rem;">My Profile</h3>
+            <form id="profileForm">
+                <input type="hidden" id="profileId" name="id">
+                <div class="form-group">
+                    <label for="profileFullName">Full Name</label>
+                    <input type="text" id="profileFullName" name="fullName" required placeholder="Enter your full name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="profileEmail">Email</label>
+                    <input type="email" id="profileEmail" name="email" required placeholder="Enter your email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="profileCurrentPassword">Current Password</label>
+                    <input type="password" id="profileCurrentPassword" name="currentPassword" placeholder="Enter current password to verify">
+                </div>
+                
+                <div class="form-group">
+                    <label for="profileNewPassword">New Password (optional)</label>
+                    <input type="password" id="profileNewPassword" name="newPassword" placeholder="Leave blank to keep current password" minlength="6">
+                    <small style="color: #666;">Leave blank to keep current password</small>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn" style="background: #95a5a6;" onclick="closeProfileModal()">Cancel</button>
+                    <button type="submit" class="btn">Update Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/public/js/admin-dashboard.js"></script>
 </body>
 </html>

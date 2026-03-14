@@ -1,22 +1,31 @@
-// Student Dashboard JavaScript
+// Student dashboard JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    checkAuthentication();
+    checkLoginStatus();
     loadStudentData();
     loadEnrollments();
+    
+    // Profile form event listener
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleProfileUpdate();
+        });
+    }
 });
 
-function checkAuthentication() {
+function checkLoginStatus() {
     const loggedInUser = localStorage.getItem('currentUser');
     if (!loggedInUser) {
         showMessage('Please login to access dashboard', 'error');
-        window.location.href = 'login.html';
+        window.location.href = '/pages/login.html';
         return;
     }
     
     const user = JSON.parse(loggedInUser);
     if (user.role !== 'student') {
         showMessage('Access denied. Student dashboard only.', 'error');
-        window.location.href = 'login.html';
+        window.location.href = '/index.html';
         return;
     }
     
@@ -107,6 +116,95 @@ function logout() {
     setTimeout(() => {
         window.location.href = '/index.html';
     }, 1000);
+}
+
+function showProfile() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) {
+        showMessage('Please login to view profile', 'error');
+        return;
+    }
+    
+    // Populate profile form with current user data
+    document.getElementById('profileId').value = currentUser.id;
+    document.getElementById('profileFullName').value = currentUser.name || currentUser.full_name || '';
+    document.getElementById('profileEmail').value = currentUser.email;
+    document.getElementById('profileCurrentPassword').value = '';
+    document.getElementById('profileNewPassword').value = '';
+    
+    // Show modal
+    document.getElementById('profileModal').style.display = 'block';
+}
+
+function closeProfileModal() {
+    document.getElementById('profileModal').style.display = 'none';
+    document.getElementById('profileForm').reset();
+}
+
+async function handleProfileUpdate() {
+    const formData = new FormData(document.getElementById('profileForm'));
+    const profileData = {
+        id: parseInt(formData.get('id')),
+        fullName: formData.get('fullName'),
+        email: formData.get('email'),
+        currentPassword: formData.get('currentPassword'),
+        newPassword: formData.get('newPassword')
+    };
+    
+    // Validation
+    if (!profileData.fullName || !profileData.email) {
+        showMessage('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    if (!profileData.currentPassword) {
+        showMessage('Please enter your current password to verify your identity', 'error');
+        return;
+    }
+    
+    if (profileData.newPassword && profileData.newPassword.length < 6) {
+        showMessage('New password must be at least 6 characters', 'error');
+        return;
+    }
+    
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const response = await fetch('/api/users/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentUser.token}`
+            },
+            body: JSON.stringify(profileData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update localStorage with new user data
+            const updatedUser = {
+                ...currentUser,
+                name: profileData.fullName,
+                full_name: profileData.fullName,
+                email: profileData.email
+            };
+            localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+            
+            // Update student name in dashboard
+            const studentNameElement = document.getElementById('studentName');
+            if (studentNameElement) {
+                studentNameElement.textContent = profileData.fullName;
+            }
+            
+            showMessage('Profile updated successfully!', 'success');
+            closeProfileModal();
+        } else {
+            showMessage(result.message || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showMessage('Error updating profile', 'error');
+    }
 }
 
 // Helper function to show messages

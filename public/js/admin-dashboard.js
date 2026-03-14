@@ -27,6 +27,15 @@ function setupCourseForms() {
             handleEditCourse();
         });
     }
+
+    // Profile form
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleProfileUpdate();
+        });
+    }
 }
 
 async function handleAddCourse() {
@@ -331,17 +340,74 @@ async function rejectEnrollment(requestId) {
     }
 }
 
-function viewStudentDetails(studentEmail) {
-    // This function will be enhanced when detailed student view is implemented
-    showMessage(`Student details for ${studentEmail} coming soon!`, 'info');
+function viewStudentDetails(studentId) {
+    // This function will show detailed student information
+    showMessage(`Student details for ID: ${studentId} - Feature coming soon!`, 'info');
 }
 
 function viewStudents() {
-    // Scroll to students section
-    const studentsSection = document.querySelector('.dashboard-card:last-child');
-    if (studentsSection) {
-        studentsSection.scrollIntoView({ behavior: 'smooth' });
+    // Hide other sections and show student management
+    const courseManagementSection = document.getElementById('courseManagementSection');
+    const studentManagementSection = document.getElementById('studentManagementSection');
+    
+    if (courseManagementSection) courseManagementSection.style.display = 'none';
+    if (studentManagementSection) studentManagementSection.style.display = 'block';
+    
+    loadStudentsForManagement();
+}
+
+function showManageStudents() {
+    const studentManagementSection = document.getElementById('studentManagementSection');
+    if (studentManagementSection) {
+        studentManagementSection.style.display = 'block';
+        loadStudentsForManagement();
     }
+}
+
+async function loadStudentsForManagement() {
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const response = await fetch('/api/users/students', {
+            headers: {
+                'Authorization': `Bearer ${currentUser.token}`
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displayStudentsForManagement(result.data);
+        } else {
+            showMessage('Failed to load students', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading students:', error);
+        showMessage('Error loading students', 'error');
+    }
+}
+
+function displayStudentsForManagement(students) {
+    const studentsTable = document.getElementById('studentsManagementTable');
+    if (!studentsTable) return;
+
+    studentsTable.innerHTML = students.map(student => {
+        const registrationDate = new Date(student.created_at).toLocaleDateString();
+        const statusClass = student.status === 'active' ? 'status-approved' : 'status-rejected';
+        const statusText = student.status.charAt(0).toUpperCase() + student.status.slice(1);
+        
+        return `
+            <tr>
+                <td>${student.full_name}</td>
+                <td>${student.email}</td>
+                <td>${registrationDate}</td>
+                <td>${student.enrollment_count || 0} courses</td>
+                <td><span class="status ${statusClass}">${statusText}</span></td>
+                <td>
+                    <button class="btn" style="padding: 5px 10px; font-size: 0.875rem; background: #3498db;" onclick="viewStudentDetails(${student.id})">View Details</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function manageCourses() {
@@ -371,17 +437,29 @@ function closeEditCourseModal() {
     document.getElementById('editCourseForm').reset();
 }
 
-function loadCoursesForManagement() {
-    // Mock data for now - will be replaced with API call
-    const courses = [
-        { id: 1, title: 'Complete Web Development Bootcamp', instructor: 'John Doe', modules: 12, duration_hours: 40, status: 'active' },
-        { id: 2, title: 'Python for Data Science', instructor: 'Jane Smith', modules: 10, duration_hours: 35, status: 'active' },
-        { id: 3, title: 'SQL & Database Management', instructor: 'Mike Johnson', modules: 8, duration_hours: 25, status: 'active' },
-        { id: 4, title: 'Modern React Development', instructor: 'Sarah Wilson', modules: 9, duration_hours: 30, status: 'active' },
-        { id: 5, title: 'UI/UX Design Fundamentals', instructor: 'Emily Brown', modules: 7, duration_hours: 20, status: 'active' },
-        { id: 6, title: 'React Native Mobile Apps', instructor: 'David Lee', modules: 11, duration_hours: 38, status: 'active' }
-    ];
+async function loadCoursesForManagement() {
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const response = await fetch('/api/courses', {
+            headers: {
+                'Authorization': `Bearer ${currentUser.token}`
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displayCoursesForManagement(result.data);
+        } else {
+            showMessage('Failed to load courses', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading courses:', error);
+        showMessage('Error loading courses', 'error');
+    }
+}
 
+function displayCoursesForManagement(courses) {
     const coursesTable = document.getElementById('coursesManagementTable');
     if (!coursesTable) return;
 
@@ -405,40 +483,63 @@ function loadCoursesForManagement() {
     }).join('');
 }
 
-function editCourse(courseId) {
-    const courses = [
-        { id: 1, title: 'Complete Web Development Bootcamp', description: 'Learn HTML, CSS, JavaScript, Node.js, and modern web development frameworks from scratch.', instructor: 'John Doe', modules: 12, duration_hours: 40 },
-        { id: 2, title: 'Python for Data Science', description: 'Master Python programming and data analysis with pandas, NumPy, and machine learning basics.', instructor: 'Jane Smith', modules: 10, duration_hours: 35 },
-        { id: 3, title: 'SQL & Database Management', description: 'Learn database design, SQL queries, and database administration with MySQL and PostgreSQL.', instructor: 'Mike Johnson', modules: 8, duration_hours: 25 },
-        { id: 4, title: 'Modern React Development', description: 'Build modern web applications with React, Redux, hooks, and latest React ecosystem.', instructor: 'Sarah Wilson', modules: 9, duration_hours: 30 },
-        { id: 5, title: 'UI/UX Design Fundamentals', description: 'Learn user interface and user experience design principles with Figma and modern design tools.', instructor: 'Emily Brown', modules: 7, duration_hours: 20 },
-        { id: 6, title: 'React Native Mobile Apps', description: 'Build cross-platform mobile applications for iOS and Android using React Native.', instructor: 'David Lee', modules: 11, duration_hours: 38 }
-    ];
+async function editCourse(courseId) {
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const response = await fetch(`/api/courses/${courseId}`, {
+            headers: {
+                'Authorization': `Bearer ${currentUser.token}`
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const course = result.data;
+            
+            // Populate edit form
+            document.getElementById('editCourseId').value = course.id;
+            document.getElementById('editCourseTitle').value = course.title;
+            document.getElementById('editCourseDescription').value = course.description;
+            document.getElementById('editCourseInstructor').value = course.instructor;
+            document.getElementById('editCourseModules').value = course.modules;
+            document.getElementById('editCourseDuration').value = course.duration_hours;
 
-    const course = courses.find(c => c.id === courseId);
-    if (!course) {
-        showMessage('Course not found', 'error');
-        return;
+            // Show modal
+            document.getElementById('editCourseModal').style.display = 'block';
+        } else {
+            showMessage('Course not found', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading course details:', error);
+        showMessage('Error loading course details', 'error');
     }
-
-    // Populate edit form
-    document.getElementById('editCourseId').value = course.id;
-    document.getElementById('editCourseTitle').value = course.title;
-    document.getElementById('editCourseDescription').value = course.description;
-    document.getElementById('editCourseInstructor').value = course.instructor;
-    document.getElementById('editCourseModules').value = course.modules;
-    document.getElementById('editCourseDuration').value = course.duration_hours;
-
-    // Show modal
-    document.getElementById('editCourseModal').style.display = 'block';
 }
 
-function deleteCourse(courseId) {
+async function deleteCourse(courseId) {
     if (confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
-       
-        showMessage('Course deleted successfully!', 'success');
-        loadCoursesForManagement();
-        loadDashboardData(); // Refresh stats
+        try {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const response = await fetch(`/api/courses/${courseId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${currentUser.token}`
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showMessage('Course deleted successfully!', 'success');
+                loadCoursesForManagement();
+                loadDashboardData(); // Refresh stats
+            } else {
+                showMessage(result.message || 'Failed to delete course', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting course:', error);
+            showMessage('Error deleting course', 'error');
+        }
     }
 }
 
@@ -446,8 +547,91 @@ function logout() {
     localStorage.removeItem('currentUser');
     showMessage('Logged out successfully', 'success');
     setTimeout(() => {
-        window.location.href = '../';
+        window.location.href = '/index.html';
     }, 1000);
+}
+
+function showProfile() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) {
+        showMessage('Please login to view profile', 'error');
+        return;
+    }
+    
+    // Populate profile form with current user data
+    document.getElementById('profileId').value = currentUser.id;
+    document.getElementById('profileFullName').value = currentUser.name || currentUser.full_name || '';
+    document.getElementById('profileEmail').value = currentUser.email;
+    document.getElementById('profileCurrentPassword').value = '';
+    document.getElementById('profileNewPassword').value = '';
+    
+    // Show modal
+    document.getElementById('profileModal').style.display = 'block';
+}
+
+function closeProfileModal() {
+    document.getElementById('profileModal').style.display = 'none';
+    document.getElementById('profileForm').reset();
+}
+
+async function handleProfileUpdate() {
+    const formData = new FormData(document.getElementById('profileForm'));
+    const profileData = {
+        id: parseInt(formData.get('id')),
+        fullName: formData.get('fullName'),
+        email: formData.get('email'),
+        currentPassword: formData.get('currentPassword'),
+        newPassword: formData.get('newPassword')
+    };
+    
+    // Validation
+    if (!profileData.fullName || !profileData.email) {
+        showMessage('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    if (!profileData.currentPassword) {
+        showMessage('Please enter your current password to verify your identity', 'error');
+        return;
+    }
+    
+    if (profileData.newPassword && profileData.newPassword.length < 6) {
+        showMessage('New password must be at least 6 characters', 'error');
+        return;
+    }
+    
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const response = await fetch('/api/users/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentUser.token}`
+            },
+            body: JSON.stringify(profileData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update localStorage with new user data
+            const updatedUser = {
+                ...currentUser,
+                name: profileData.fullName,
+                full_name: profileData.fullName,
+                email: profileData.email
+            };
+            localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+            
+            showMessage('Profile updated successfully!', 'success');
+            closeProfileModal();
+        } else {
+            showMessage(result.message || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showMessage('Error updating profile', 'error');
+    }
 }
 
 // Helper function to show messages
@@ -470,4 +654,95 @@ function showMessage(message, type = 'info') {
     setTimeout(() => {
         messageDiv.remove();
     }, 3000);
+}
+
+function logout() {
+    localStorage.removeItem('currentUser');
+    showMessage('Logged out successfully', 'success');
+    setTimeout(() => {
+        window.location.href = '/index.html';
+    }, 1000);
+}
+
+function showProfile() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) {
+        showMessage('Please login to view profile', 'error');
+        return;
+    }
+    
+    // Populate profile form with current user data
+    document.getElementById('profileId').value = currentUser.id;
+    document.getElementById('profileFullName').value = currentUser.name || currentUser.full_name || '';
+    document.getElementById('profileEmail').value = currentUser.email;
+    document.getElementById('profileCurrentPassword').value = '';
+    document.getElementById('profileNewPassword').value = '';
+    
+    // Show modal
+    document.getElementById('profileModal').style.display = 'block';
+}
+
+function closeProfileModal() {
+    document.getElementById('profileModal').style.display = 'none';
+    document.getElementById('profileForm').reset();
+}
+
+async function handleProfileUpdate() {
+    const formData = new FormData(document.getElementById('profileForm'));
+    const profileData = {
+        id: parseInt(formData.get('id')),
+        fullName: formData.get('fullName'),
+        email: formData.get('email'),
+        currentPassword: formData.get('currentPassword'),
+        newPassword: formData.get('newPassword')
+    };
+    
+    // Validation
+    if (!profileData.fullName || !profileData.email) {
+        showMessage('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    if (!profileData.currentPassword) {
+        showMessage('Please enter your current password to verify your identity', 'error');
+        return;
+    }
+    
+    if (profileData.newPassword && profileData.newPassword.length < 6) {
+        showMessage('New password must be at least 6 characters', 'error');
+        return;
+    }
+    
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const response = await fetch('/api/users/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentUser.token}`
+            },
+            body: JSON.stringify(profileData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update localStorage with new user data
+            const updatedUser = {
+                ...currentUser,
+                name: profileData.fullName,
+                full_name: profileData.fullName,
+                email: profileData.email
+            };
+            localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+            
+            showMessage('Profile updated successfully!', 'success');
+            closeProfileModal();
+        } else {
+            showMessage(result.message || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showMessage('Error updating profile', 'error');
+    }
 }

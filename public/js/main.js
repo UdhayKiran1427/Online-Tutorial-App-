@@ -26,27 +26,58 @@ function checkLoginStatus() {
 }
 
 function updateNavigation() {
+    console.log('updateNavigation called, isLoggedIn:', isLoggedIn, 'currentUser:', currentUser);
+    
     if (isLoggedIn && currentUser) {
         // Update navigation based on user role
         const navLinks = document.querySelector('.nav-links');
         if (navLinks) {
+            console.log('Found navLinks, current items:', navLinks.children.length);
+            
+            // Check if navigation already has dashboard/profile/logout (to avoid duplicates)
+            const hasDashboard = Array.from(navLinks.children).some(li => 
+                li.textContent.includes('Dashboard')
+            );
+            const hasProfile = Array.from(navLinks.children).some(li => 
+                li.textContent.includes('Profile')
+            );
+            const hasLogout = Array.from(navLinks.children).some(li => 
+                li.textContent.includes('Logout')
+            );
+            
+            console.log('Navigation already has - Dashboard:', hasDashboard, 'Profile:', hasProfile, 'Logout:', hasLogout);
+            
+            // If already updated, don't update again
+            if (hasDashboard && hasProfile && hasLogout) {
+                console.log('Navigation already updated, skipping');
+                return;
+            }
+            
             // Add dashboard link based on role
             const dashboardLink = currentUser.role === 'admin' 
                 ? '<li><a href="/pages/admin-dashboard.html">Dashboard</a></li>'
                 : '<li><a href="/pages/student-dashboard.html">Dashboard</a></li>';
             
+            // Add profile link
+            const profileLink = '<li><a href="/pages/profile.html">Profile</a></li>';
+            
             // Add logout link
             const logoutLink = '<li><a href="#" onclick="logout()">Logout</a></li>';
             
-            // Remove login/register links and add dashboard/logout
+            // Remove login/register links and add dashboard/profile/logout
             const loginLink = navLinks.querySelector('li:nth-child(3)');
             const registerLink = navLinks.querySelector('li:nth-child(4)');
             
+            console.log('Removing login/register links...');
             if (loginLink) loginLink.remove();
             if (registerLink) registerLink.remove();
             
+            console.log('Adding new navigation links...');
             navLinks.insertAdjacentHTML('beforeend', dashboardLink);
+            navLinks.insertAdjacentHTML('beforeend', profileLink);
             navLinks.insertAdjacentHTML('beforeend', logoutLink);
+            
+            console.log('Navigation update complete');
         }
     }
 }

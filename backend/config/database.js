@@ -84,7 +84,6 @@ async function initializeDatabase() {
             )
         `);
         
-        // Insert sample courses if empty
         const [courseCount] = await connection.query('SELECT COUNT(*) as count FROM courses');
         if (courseCount[0].count === 0) {
             await connection.query(`

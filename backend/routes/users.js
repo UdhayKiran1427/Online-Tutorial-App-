@@ -3,8 +3,35 @@ const { pool } = require('../config/database');
 
 const router = express.Router();
 
+// Middleware to verify JWT token
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({
+            success: false,
+            message: 'Access token required'
+        });
+    }
+
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({
+                success: false,
+                message: 'Invalid or expired token'
+            });
+        }
+        req.user = user;
+        next();
+    });
+};
+
 // Get all students (Admin only)
-router.get('/students', async (req, res) => {
+router.get('/students', authenticateToken, async (req, res) => {
     try {
         const [students] = await pool.query(`
             SELECT 
@@ -34,7 +61,7 @@ router.get('/students', async (req, res) => {
 });
 
 // Get student details with enrollments
-router.get('/students/:id', async (req, res) => {
+router.get('/students/:id', authenticateToken, async (req, res) => {
     try {
         const studentId = req.params.id;
         
@@ -124,8 +151,7 @@ router.get('/dashboard/stats', async (req, res) => {
 // Get student dashboard statistics
 router.get('/student/dashboard/stats', async (req, res) => {
     try {
-        // This would typically use authentication middleware to get the student ID
-        // For now, we'll assume it's passed as a query parameter
+        
         const studentId = req.query.studentId;
         
         if (!studentId) {
@@ -165,12 +191,12 @@ router.get('/student/dashboard/stats', async (req, res) => {
     }
 });
 
-// Deactivate user (Admin only)
+
 router.put('/users/:id/deactivate', async (req, res) => {
     try {
         const userId = req.params.id;
 
-        // Check if user exists
+       
         const [users] = await pool.query('SELECT id, role FROM users WHERE id = ?', [userId]);
         
         if (users.length === 0) {
@@ -239,6 +265,241 @@ router.put('/users/:id/activate', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error while activating user'
+        });
+    }
+});
+
+// Get user by ID (Admin only)
+router.get('/:id', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.params.id;
+        
+        const [users] = await pool.query(
+            'SELECT id, full_name, email, role, registration_date, status FROM users WHERE id = ?',
+            [userId]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: users[0]
+        });
+
+    } catch (error) {
+        console.error('Get user error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching user'
+        });
+    }
+});
+
+// Update user (Admin only)
+router.put('/:id', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const { fullName, email, password } = req.body;
+
+        // Check if user exists
+        const [users] = await pool.query('SELECT id FROM users WHERE id = ?', [userId]);
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Check if email is already used by another user
+        if (email) {
+            const [existingUsers] = await pool.query(
+                'SELECT id FROM users WHERE email = ? AND id != ?',
+                [email, userId]
+            );
+            if (existingUsers.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email already in use by another user'
+                });
+            }
+        }
+
+        // Build update query
+        let updateQuery = 'UPDATE users SET updated_at = CURRENT_TIMESTAMP';
+        let updateParams = [];
+        
+        if (fullName) {
+            updateQuery += ', full_name = ?';
+            updateParams.push(fullName);
+        }
+        
+        if (email) {
+            updateQuery += ', email = ?';
+            updateParams.push(email);
+        }
+        
+        if (password) {
+            const bcrypt = require('bcryptjs');
+            const hashedPassword = await bcrypt.hash(password, 10);
+            updateQuery += ', password = ?';
+            updateParams.push(hashedPassword);
+        }
+        
+        updateQuery += ' WHERE id = ?';
+        updateParams.push(userId);
+
+        await pool.query(updateQuery, updateParams);
+
+        res.json({
+            success: true,
+            message: 'User updated successfully'
+        });
+
+    } catch (error) {
+        console.error('Update user error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while updating user'
+        });
+    }
+});
+
+// Delete user (Admin only)
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.params.id;
+
+        // Check if user exists
+        const [users] = await pool.query('SELECT id, role FROM users WHERE id = ?', [userId]);
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Prevent deletion of admin users
+        if (users[0].role === 'admin') {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot delete admin users'
+            });
+        }
+
+        // Start transaction
+        const connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        try {
+            // Delete user's enrollments first
+            await connection.query('DELETE FROM enrollments WHERE student_id = ?', [userId]);
+            
+            // Delete user
+            await connection.query('DELETE FROM users WHERE id = ?', [userId]);
+            
+            await connection.commit();
+            
+            res.json({
+                success: true,
+                message: 'User deleted successfully'
+            });
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while deleting user'
+        });
+    }
+});
+
+// Update user profile (authenticated user)
+router.put('/profile', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId; // Get user ID from token (corrected from req.user.id)
+        const { fullName, email, currentPassword, newPassword } = req.body;
+
+        console.log('Updating profile for user ID:', userId);
+
+        // Check if user exists
+        const [users] = await pool.query('SELECT id, password, email FROM users WHERE id = ?', [userId]);
+        if (users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Verify current password
+        const bcrypt = require('bcryptjs');
+        const isPasswordValid = await bcrypt.compare(currentPassword, users[0].password);
+        if (!isPasswordValid) {
+            return res.status(400).json({
+                success: false,
+                message: 'Current password is incorrect'
+            });
+        }
+
+        // Check if email is already used by another user
+        if (email && email !== users[0].email) {
+            const [existingUsers] = await pool.query(
+                'SELECT id FROM users WHERE email = ? AND id != ?',
+                [email, userId]
+            );
+            if (existingUsers.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email already in use by another user'
+                });
+            }
+        }
+
+        // Build update query
+        let updateQuery = 'UPDATE users SET updated_at = CURRENT_TIMESTAMP';
+        let updateParams = [];
+        
+        if (fullName) {
+            updateQuery += ', full_name = ?';
+            updateParams.push(fullName);
+        }
+        
+        if (email) {
+            updateQuery += ', email = ?';
+            updateParams.push(email);
+        }
+        
+        if (newPassword) {
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            updateQuery += ', password = ?';
+            updateParams.push(hashedPassword);
+        }
+        
+        updateQuery += ' WHERE id = ?';
+        updateParams.push(userId);
+
+        await pool.query(updateQuery, updateParams);
+
+        res.json({
+            success: true,
+            message: 'Profile updated successfully'
+        });
+
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while updating profile'
         });
     }
 });

@@ -1,7 +1,7 @@
 // Courses page JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize navigation first
-    initializeApp();
+    // Let main.js handle initialization and navigation
+    // Just run course-specific functionality
     checkLoginStatus();
     loadCourses();
 });
