@@ -50,7 +50,7 @@ async function loadEnrollments() {
     console.log('Loading enrollments for user:', user);
     
     try {
-        const response = await fetch('/api/enrollments/student', {
+        const response = await fetch(`/api/enrollments/student/${user.id}`, {
             headers: {
                 'Authorization': `Bearer ${user.token}`
             }

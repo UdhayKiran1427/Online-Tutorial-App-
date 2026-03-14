@@ -30,28 +30,42 @@ async function loadCourses() {
         const loggedInUser = localStorage.getItem('currentUser');
         let enrollments = [];
         
+        console.log('loadCourses: Starting to load courses');
+        
         // If user is logged in, get their enrollments
         if (loggedInUser) {
             const user = JSON.parse(loggedInUser);
+            console.log('loadCourses: User logged in as', user.role);
+            
             if (user.role === 'student') {
                 try {
-                    const enrollmentsResponse = await fetch('/api/enrollments/student', {
+                    console.log('loadCourses: Fetching student enrollments...');
+                    const enrollmentsResponse = await fetch(`/api/enrollments/student/${user.id}`, {
                         headers: {
                             'Authorization': `Bearer ${user.token}`
                         }
                     });
                     const enrollmentsResult = await enrollmentsResponse.json();
+                    console.log('loadCourses: Enrollments response:', enrollmentsResult);
+                    
                     if (enrollmentsResult.success) {
                         enrollments = enrollmentsResult.data;
+                        console.log('loadCourses: Student enrollments loaded:', enrollments);
+                    } else {
+                        console.log('loadCourses: Failed to load enrollments:', enrollmentsResult.message);
                     }
                 } catch (error) {
                     console.error('Error loading enrollments:', error);
                 }
             }
+        } else {
+            console.log('loadCourses: User not logged in');
         }
         
+        console.log('loadCourses: Fetching courses...');
         const response = await fetch('/api/courses');
         const result = await response.json();
+        console.log('loadCourses: Courses response:', result);
         
         if (result.success) {
             displayCourses(result.data, enrollments);
