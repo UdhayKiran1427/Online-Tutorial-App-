@@ -9,6 +9,19 @@ document.addEventListener('DOMContentLoaded', function() {
     setupCourseForms();
 });
 
+// URL validation helper function
+function isValidUrl(string) {
+    if (!string || string.trim() === '') {
+        return true; // Empty string is valid (optional field)
+    }
+    try {
+        new URL(string);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
 function setupCourseForms() {
     // Add course form
     const addCourseForm = document.getElementById('addCourseForm');
@@ -45,7 +58,8 @@ async function handleAddCourse() {
         description: formData.get('description'),
         instructor: formData.get('instructor'),
         modules: parseInt(formData.get('modules')),
-        durationHours: parseInt(formData.get('durationHours'))
+        durationHours: parseInt(formData.get('durationHours')),
+        link: formData.get('link') || null
     };
     
     // Validation
@@ -56,6 +70,12 @@ async function handleAddCourse() {
     
     if (courseData.modules < 1 || courseData.durationHours < 1) {
         showMessage('Modules and duration must be positive numbers', 'error');
+        return;
+    }
+    
+    // Validate URL if provided
+    if (courseData.link && !isValidUrl(courseData.link)) {
+        showMessage('Please enter a valid URL for the course link', 'error');
         return;
     }
     
@@ -101,7 +121,8 @@ async function handleEditCourse() {
         description: formData.get('description'),
         instructor: formData.get('instructor'),
         modules: parseInt(formData.get('modules')),
-        durationHours: parseInt(formData.get('durationHours'))
+        durationHours: parseInt(formData.get('durationHours')),
+        link: formData.get('link') || null
     };
     
     // Validation
@@ -112,6 +133,12 @@ async function handleEditCourse() {
     
     if (courseData.modules < 1 || courseData.durationHours < 1) {
         showMessage('Modules and duration must be positive numbers', 'error');
+        return;
+    }
+    
+    // Validate URL if provided
+    if (courseData.link && !isValidUrl(courseData.link)) {
+        showMessage('Please enter a valid URL for the course link', 'error');
         return;
     }
     
@@ -164,22 +191,64 @@ function checkAuthentication() {
     }
 }
 
-function loadDashboardData() {
-    // Load dashboard statistics
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const enrollments = JSON.parse(localStorage.getItem('enrollments') || '[]');
-    
-    const students = users.filter(u => u.role === 'student');
-    const pendingRequests = enrollments.filter(e => e.status === 'pending');
-    const approvedEnrollments = enrollments.filter(e => e.status === 'approved');
-    
-    // Update dashboard stats
-    updateDashboardStats({
-        totalStudents: students.length,
-        totalCourses: 6, // Mock data
-        pendingRequests: pendingRequests.length,
-        approvedEnrollments: approvedEnrollments.length
-    });
+async function loadDashboardData() {
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        
+        // Load students count from API
+        const studentsResponse = await fetch('/api/users/students', {
+            headers: {
+                'Authorization': `Bearer ${currentUser.token}`
+            }
+        });
+        const studentsResult = await studentsResponse.json();
+        const students = studentsResult.success ? studentsResult.data : [];
+        
+        // Load enrollments from API
+        const enrollmentsResponse = await fetch('/api/enrollments', {
+            headers: {
+                'Authorization': `Bearer ${currentUser.token}`
+            }
+        });
+        const enrollmentsResult = await enrollmentsResponse.json();
+        const enrollments = enrollmentsResult.success ? enrollmentsResult.data : [];
+        
+        // Load courses from API
+        const coursesResponse = await fetch('/api/courses', {
+            headers: {
+                'Authorization': `Bearer ${currentUser.token}`
+            }
+        });
+        const coursesResult = await coursesResponse.json();
+        const courses = coursesResult.success ? coursesResult.data : [];
+        
+        const pendingRequests = enrollments.filter(e => e.status === 'pending');
+        const approvedEnrollments = enrollments.filter(e => e.status === 'approved');
+        
+        // Update dashboard stats
+        updateDashboardStats({
+            totalStudents: students.length,
+            totalCourses: courses.length,
+            pendingRequests: pendingRequests.length,
+            approvedEnrollments: approvedEnrollments.length
+        });
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        // Fallback to localStorage if API fails
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const enrollments = JSON.parse(localStorage.getItem('enrollments') || '[]');
+        
+        const students = users.filter(u => u.role === 'student');
+        const pendingRequests = enrollments.filter(e => e.status === 'pending');
+        const approvedEnrollments = enrollments.filter(e => e.status === 'approved');
+        
+        updateDashboardStats({
+            totalStudents: students.length,
+            totalCourses: 6, // Fallback count
+            pendingRequests: pendingRequests.length,
+            approvedEnrollments: approvedEnrollments.length
+        });
+    }
 }
 
 function updateDashboardStats(stats) {
@@ -267,27 +336,9 @@ function displayEnrollmentRequests(enrollments) {
 }
 
 function loadStudents() {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const students = users.filter(u => u.role === 'student');
-    const enrollments = JSON.parse(localStorage.getItem('enrollments') || '[]');
-    
-    const studentsTable = document.querySelector('.dashboard-card:last-child tbody');
-    if (!studentsTable) return;
-    
-    studentsTable.innerHTML = students.map(student => {
-        const studentEnrollments = enrollments.filter(e => e.studentEmail === student.email);
-        const registrationDate = new Date(student.registrationDate).toLocaleDateString();
-        
-        return `
-            <tr>
-                <td>${student.fullName}</td>
-                <td>${student.email}</td>
-                <td>${registrationDate}</td>
-                <td>${studentEnrollments.length} courses</td>
-                <td><button class="btn" style="padding: 5px 10px; font-size: 0.875rem;" onclick="viewStudentDetails('${student.email}')">View</button></td>
-            </tr>
-        `;
-    }).join('');
+    // This function is now handled by loadStudentsForManagement() which uses API
+    // Keeping this for backward compatibility
+    loadStudentsForManagement();
 }
 
 async function approveEnrollment(requestId) {
@@ -504,6 +555,7 @@ async function editCourse(courseId) {
             document.getElementById('editCourseInstructor').value = course.instructor;
             document.getElementById('editCourseModules').value = course.modules;
             document.getElementById('editCourseDuration').value = course.duration_hours;
+            document.getElementById('editCourseLink').value = course.link || '';
 
             // Show modal
             document.getElementById('editCourseModal').style.display = 'block';
@@ -660,7 +712,7 @@ function logout() {
     localStorage.removeItem('currentUser');
     showMessage('Logged out successfully', 'success');
     setTimeout(() => {
-        window.location.href = '/index.html';
+        window.location.href = '/';
     }, 1000);
 }
 

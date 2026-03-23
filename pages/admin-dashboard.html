@@ -66,38 +66,7 @@
                             </tr>
                         </thead>
                         <tbody id="enrollmentRequests">
-                            <tr>
-                                <td>John Smith</td>
-                                <td>john.smith@email.com</td>
-                                <td>Complete Web Development Bootcamp</td>
-                                <td>2024-03-10</td>
-                                <td><span class="status status-pending">Pending</span></td>
-                                <td>
-                                    <button class="btn" style="padding: 5px 10px; margin-right: 5px; font-size: 0.875rem; background: #27ae60;" onclick="approveEnrollment(1)">Approve</button>
-                                    <button class="btn" style="padding: 5px 10px; font-size: 0.875rem; background: #e74c3c;" onclick="rejectEnrollment(1)">Reject</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Sarah Johnson</td>
-                                <td>sarah.j@email.com</td>
-                                <td>Python for Data Science</td>
-                                <td>2024-03-09</td>
-                                <td><span class="status status-pending">Pending</span></td>
-                                <td>
-                                    <button class="btn" style="padding: 5px 10px; margin-right: 5px; font-size: 0.875rem; background: #27ae60;" onclick="approveEnrollment(2)">Approve</button>
-                                    <button class="btn" style="padding: 5px 10px; font-size: 0.875rem; background: #e74c3c;" onclick="rejectEnrollment(2)">Reject</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Mike Davis</td>
-                                <td>mike.d@email.com</td>
-                                <td>SQL & Database Management</td>
-                                <td>2024-03-08</td>
-                                <td><span class="status status-approved">Approved</span></td>
-                                <td>
-                                    <button class="btn" style="padding: 5px 10px; font-size: 0.875rem;" disabled>Approved</button>
-                                </td>
-                            </tr>
+                            <!-- Enrollment requests will be loaded dynamically -->
                         </tbody>
                     </table>
                 </div>
@@ -168,7 +137,7 @@
                 </div>
             </div>
 
-            <div class="dashboard-card" style="margin-top: 2rem;">
+            <!-- <div class="dashboard-card" style="margin-top: 2rem;">
                 <h3>👥 All Students</h3>
                 <div class="table-container">
                     <table>
@@ -206,7 +175,7 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </div> -->
         </div>
     </main>
 
@@ -218,8 +187,8 @@
 
     <!-- Add Course Modal -->
     <div id="addCourseModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1000;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 0.8rem; border-radius: 10px; width: 90%; height: 100%; max-width: 500px; ">
-            <h3 style="margin-bottom: 1.5rem;">Add New Course</h3>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 0.8rem; border-radius: 10px; width: 90%; height: 100%; max-width: 500px; overflow-y: auto;">
+            <h3 style="margin-bottom: 0.7rem;">Add New Course</h3>
             <form id="addCourseForm">
                 <div class="form-group">
                     <label for="courseTitle">Course Title</label>
@@ -246,7 +215,13 @@
                     <input type="number" id="courseDuration" name="durationHours" required min="1" placeholder="Enter duration in hours">
                 </div>
                 
-                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <div class="form-group">
+                    <label for="courseLink">Course Link (Optional)</label>
+                    <input type="url" id="courseLink" name="link" placeholder="Enter course documentation URL">
+                    <small style="color: #666;">Optional: Link to course documentation or resources</small>
+                </div>
+                
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
                     <button type="button" class="btn" style="background: #95a5a6;" onclick="closeAddCourseModal()">Cancel</button>
                     <button type="submit" class="btn">Add Course</button>
                 </div>
@@ -283,6 +258,12 @@
                 <div class="form-group">
                     <label for="editCourseDuration">Duration (Hours)</label>
                     <input type="number" id="editCourseDuration" name="durationHours" required min="1" placeholder="Enter duration in hours">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editCourseLink">Course Link (Optional)</label>
+                    <input type="url" id="editCourseLink" name="link" placeholder="Enter course documentation URL">
+                    <small style="color: #666;">Optional: Link to course documentation or resources</small>
                 </div>
                 
                 <div style="display: flex; gap: 1rem; justify-content: flex-end;">

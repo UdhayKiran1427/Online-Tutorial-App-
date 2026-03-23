@@ -118,8 +118,57 @@ function displayEnrollments(enrollments) {
 }
 
 function continueCourse(courseId) {
-    // Redirect to course content page
-    window.location.href = `/pages/course-content.html?courseId=${courseId}`;
+    // Course documentation mapping
+    const courseDocumentation = {
+        1: 'https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web',
+        2: 'https://docs.python.org/3/tutorial/',
+        3: 'https://www.w3schools.com/sql/',
+        4: 'https://react.dev/learn',
+        5: 'https://www.interaction-design.org/literature/topics/ui-design',
+        6: 'https://nodejs.org/en/docs/',
+        7: 'https://angular.io/docs',
+        8: 'https://vuejs.org/guide/introduction.html',
+        9: 'https://www.mongodb.com/docs/',
+        10: 'https://expressjs.com/en/guide/'
+    };
+    
+    // Find the course from the enrollment table
+    const courseElement = document.querySelector(`[onclick="continueCourse(${courseId})"]`);
+    const courseRow = courseElement ? courseElement.closest('tr') : null;
+    
+    if (courseRow) {
+        // Get course title from the table to find the corresponding course link
+        const courseTitleCell = courseRow.querySelector('td:first-child');
+        const courseTitle = courseTitleCell ? courseTitleCell.textContent.trim() : '';
+        
+        // Find the course card with matching title to get the link
+        const courseCards = document.querySelectorAll('.course-card');
+        let targetCard = null;
+        courseCards.forEach(card => {
+            const titleElement = card.querySelector('h3');
+            if (titleElement && titleElement.textContent.trim() === courseTitle) {
+                targetCard = card;
+            }
+        });
+        
+        if (targetCard) {
+            const linkElement = targetCard.querySelector('a[href*="course"]');
+            if (linkElement) {
+                // Open course link in new tab
+                window.open(linkElement.href, '_blank');
+                return;
+            }
+        }
+    }
+    
+    // Fallback to course-specific documentation
+    const documentationUrl = courseDocumentation[courseId];
+    if (documentationUrl) {
+        window.open(documentationUrl, '_blank');
+    } else {
+        // Fallback to course content page if no specific documentation
+        window.location.href = `/pages/course-content.html?courseId=${courseId}`;
+    }
 }
 
 function logout() {

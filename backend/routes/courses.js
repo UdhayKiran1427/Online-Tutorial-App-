@@ -89,7 +89,8 @@ router.post('/', authenticateToken, [
     body('description').trim().isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
     body('modules').isInt({ min: 1 }).withMessage('Modules must be at least 1'),
     body('durationHours').isInt({ min: 1 }).withMessage('Duration must be at least 1 hour'),
-    body('instructor').trim().isLength({ min: 3 }).withMessage('Instructor name must be at least 3 characters')
+    body('instructor').trim().isLength({ min: 3 }).withMessage('Instructor name must be at least 3 characters'),
+    body('link').optional().isURL().withMessage('Link must be a valid URL')
 ], async (req, res) => {
     try {
         // Check if user is admin
@@ -109,11 +110,11 @@ router.post('/', authenticateToken, [
             });
         }
 
-        const { title, description, modules, durationHours, instructor } = req.body;
+        const { title, description, modules, durationHours, instructor, link } = req.body;
 
         const [result] = await pool.query(
-            'INSERT INTO courses (title, description, modules, duration_hours, instructor) VALUES (?, ?, ?, ?, ?)',
-            [title, description, modules, durationHours, instructor]
+            'INSERT INTO courses (title, description, modules, duration_hours, instructor, link) VALUES (?, ?, ?, ?, ?, ?)',
+            [title, description, modules, durationHours, instructor, link || null]
         );
 
         res.status(201).json({
@@ -124,8 +125,9 @@ router.post('/', authenticateToken, [
                 title,
                 description,
                 modules,
-                durationHours,
-                instructor
+                duration_hours: durationHours,
+                instructor,
+                link: link || null
             }
         });
 
@@ -144,7 +146,8 @@ router.put('/:id', authenticateToken, [
     body('description').trim().isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
     body('modules').isInt({ min: 1 }).withMessage('Modules must be at least 1'),
     body('durationHours').isInt({ min: 1 }).withMessage('Duration must be at least 1 hour'),
-    body('instructor').trim().isLength({ min: 3 }).withMessage('Instructor name must be at least 3 characters')
+    body('instructor').trim().isLength({ min: 3 }).withMessage('Instructor name must be at least 3 characters'),
+    body('link').optional().isURL().withMessage('Link must be a valid URL')
 ], async (req, res) => {
     try {
         // Check if user is admin
@@ -165,7 +168,7 @@ router.put('/:id', authenticateToken, [
         }
 
         const courseId = req.params.id;
-        const { title, description, modules, durationHours, instructor } = req.body;
+        const { title, description, modules, durationHours, instructor, link } = req.body;
 
         // Check if course exists
         const [existingCourses] = await pool.query('SELECT id FROM courses WHERE id = ?', [courseId]);
@@ -178,8 +181,8 @@ router.put('/:id', authenticateToken, [
         }
 
         const [result] = await pool.query(
-            'UPDATE courses SET title = ?, description = ?, modules = ?, duration_hours = ?, instructor = ? WHERE id = ?',
-            [title, description, modules, durationHours, instructor, courseId]
+            'UPDATE courses SET title = ?, description = ?, modules = ?, duration_hours = ?, instructor = ?, link = ? WHERE id = ?',
+            [title, description, modules, durationHours, instructor, link || null, courseId]
         );
 
         res.json({
@@ -191,7 +194,8 @@ router.put('/:id', authenticateToken, [
                 description,
                 modules,
                 durationHours,
-                instructor
+                instructor,
+                link: link || null
             }
         });
 
